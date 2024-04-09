@@ -50,7 +50,6 @@ module soft_particles
 
     character(len=256) :: file_path
     real(real64), allocatable :: M(:,:), XE(:,:), FN(:,:), UN(:,:)
-    type(festruct) :: particle
     integer(int32) :: i, j
     real(real64) :: co, kval, dl
 
@@ -69,14 +68,16 @@ module soft_particles
     FN = 0.0d0*XE
     UN = 0.0d0*XE
 
-    ! Calculate the shapecoefficients
     co = 5000.0d0
     kval = 10000.0d0
     dl = 1.0d0
     XE(:,1) = XE(:,1) + Lx/2.0d0 
     XE(:,2) = XE(:,2) + Ly/2.0d0  
     XE(:,3) = XE(:,3) + Lz/2.0d0  
-    particle = festruct(int(M),XE,FN,UN,co,kval,dl) ! kp = kval, co = bp , dl = 1.0d0
+    ! Allocate particles (We will use a single particle for now)
+    nparticle = 1
+    allocate(particles(nparticle))
+    particles(1) = festruct(int(M),XE,FN,UN,co,kval,dl) ! kp = kval, co = bp , dl = 1.0d0
 
     ! Open the file for writing
     OPEN(UNIT=10, FILE="MP.txt", STATUS='replace', ACTION='write')
@@ -135,7 +136,7 @@ module soft_particles
         do i = 1,npoints
             XC(i)   = particles(1)%XE(i,1)
             YC(i)   = particles(1)%XE(i,2)
-            ZC(i)   = 0.005d0 ! Fill it with the value of the z-component of the mesh cell center
+            ZC(i)   = particles(1)%XE(i,3)
         end do
     end subroutine getpositions
    
