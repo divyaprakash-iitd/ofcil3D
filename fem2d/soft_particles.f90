@@ -1,14 +1,14 @@
 module soft_particles
-    use mod_io
-    use fem2d
+    use fem3d
     implicit none
 
     ! Parameters
     real(8), parameter :: PI = 3.141592653589793
     
     ! Computational Domain
-    real(8)    :: Lx = 25 !50 !0.3
-    real(8)    :: Ly = 25 !50 !0.1
+    real(8)    :: Lx = 10 !50 !0.3
+    real(8)    :: Ly = 10 !50 !0.1
+    real(8)    :: Lz = 10 !50 !0.1
     
     ! Particle information
     integer         :: nvp ! Number of vertices in the particle
@@ -48,33 +48,35 @@ module soft_particles
 
     integer(C_INT), intent(inout) :: noelpts
 
+    character(len=256) :: file_path
+    real(real64), allocatable :: M(:,:), XE(:,:), FN(:,:), UN(:,:)
+    type(festruct) :: particle
+    integer(int32) :: i, j
+    real(real64) :: co, kval, dl
+
     ! Read input data from file
     open(1004,file="input_params.dat",form='formatted')
     READ(unit=1004,nml=particleprops,iostat=err)
     close(1004)
 
+    ! Latest code for 3D particle generation
+    file_path = "data/M_file.bin"
+    call read_data(file_path,M)
+    
+    file_path = "data/XE_file.bin"
+    call read_data(file_path,XE)
 
-    ! Allocate fem variables
-    !------- femdata----------!
-    OPEN(33, FILE="femdata.bin",&
-     FORM="UNFORMATTED", STATUS="UNKNOWN", ACTION="READ", ACCESS='STREAM')
-    READ(33) femdata
-    close(33)
-    !---------------------!
-    npp         = femdata(1)
-    ntri        = femdata(2)
-    nparticle   = 1
-    allocate(mp(ntri,3), pb(ntri,2,3), pp(npp,2), paelem(ntri), & 
-                FN(npp,2), UN(npp,2), pboundary(npp,2), particles(nparticle))
+    FN = 0.0d0*XE
+    UN = 0.0d0*XE
 
-    print *, npp, ntri
-     
-    ! Create fem particle
-    call read_fem_data(mp,paelem,pb,pp)
-    pboundary = .FALSE.
-    PP(:,1) = PP(:,1) + Lx/2.0d0 
-    PP(:,2) = PP(:,2) + Ly/2.0d0  
-    particles(1) = festruct(MP,PP,PB,pboundary,paelem,FN,UN,bp,kp,1.0d0) ! kp = kval, co = bp , dl = 1.0d0
+    ! Calculate the shapecoefficients
+    co = 5000.0d0
+    kval = 10000.0d0
+    dl = 1.0d0
+    XE(:,1) = XE(:,1) + Lx/2.0d0 
+    XE(:,2) = XE(:,2) + Ly/2.0d0  
+    XE(:,3) = XE(:,3) + Lz/2.0d0  
+    particle = festruct(int(M),XE,FN,UN,co,kval,dl) ! kp = kval, co = bp , dl = 1.0d0
 
     ! Open the file for writing
     OPEN(UNIT=10, FILE="MP.txt", STATUS='replace', ACTION='write')
@@ -88,7 +90,7 @@ module soft_particles
     itnum = 1
     call write_field(particles(1)%XE,'P',itnum)
 
-    noelpts = npp
+    noelpts = size(XE,1)
 
     end subroutine generateellipse
    
