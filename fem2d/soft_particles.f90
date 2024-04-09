@@ -162,7 +162,7 @@ module soft_particles
         do i = 1,npoints
             FXC(i)  = particles(1)%fden(i,1)
             FYC(i)  = particles(1)%fden(i,2)
-            FZC(i)  = 0.0
+            FZC(i)  = particles(1)%fden(i,3)
         end do
     end subroutine calculateforces
 
