@@ -18,16 +18,6 @@ module soft_particles
 
     ! FEM data
     type(festruct), allocatable :: particles(:)
-    integer(int32)              :: ntri, npp, nparticle
-    real(real64), allocatable   :: pb(:,:,:)
-    integer,      allocatable   :: mp(:,:)
-    real(real64), allocatable   :: paelem(:)
-    real(real64), allocatable   :: pp(:,:)
-    real(real64), allocatable   :: FN(:,:)
-    real(real64), allocatable   :: UN(:,:)
-    logical, allocatable        :: pboundary(:,:)
-    integer(int32)              :: femdata(2)
-    integer(int32)              :: i, j, err
 
     ! Namelists for input
     namelist /particleprops/ Kp, nvp, Bp, aa, bb
@@ -37,9 +27,9 @@ module soft_particles
     contains 
 
     subroutine sayhello() bind(C)
-        use iso_c_binding, only: C_INT, C_CHAR
-        implicit none
-        print *, "Hello!"
+       use iso_c_binding, only: C_INT, C_CHAR
+       implicit none
+       print *, "Hello!"
     end subroutine sayhello
 
     subroutine generateellipse(noelpts) bind(C)
@@ -50,7 +40,7 @@ module soft_particles
 
     character(len=256) :: file_path
     real(real64), allocatable :: M(:,:), XE(:,:), FN(:,:), UN(:,:)
-    integer(int32) :: i, j
+    integer(int32) :: i, j, err, nparticle, ntri
     real(real64) :: co, kval, dl
 
     ! Read input data from file
@@ -77,13 +67,15 @@ module soft_particles
     ! Allocate particles (We will use a single particle for now)
     nparticle = 1
     allocate(particles(nparticle))
-    particles(1) = festruct(int(M),XE,FN,UN,co,kval,dl) ! kp = kval, co = bp , dl = 1.0d0
+    !particles(1) = festruct(int(M),XE,FN,UN,co,kval,dl) ! kp = kval, co = bp , dl = 1.0d0
+    particles(1) = festruct(int(M),XE,FN,UN,bp,kp,dl) ! kp = kval, co = bp , dl = 1.0d0
 
     ! Open the file for writing
     OPEN(UNIT=10, FILE="MP.txt", STATUS='replace', ACTION='write')
     ! Loop through the matrix and write its elements to the file
+    ntri = size(M,1)
     DO i = 1, ntri
-        WRITE(10, '(3I5)') (particles(1)%M(i, j), j = 1, 3)
+       WRITE(10, '(3I5)') (particles(1)%M(i, j), j = 1, 3)
     ENDDO
     ! Close the file
     CLOSE(10)
@@ -96,107 +88,108 @@ module soft_particles
     end subroutine generateellipse
    
     subroutine arraycheck(pxyz,n) bind(C)
-        use iso_c_binding, only: c_int, c_double, c_loc
-        implicit none
-        
-        integer(c_int), intent(in) :: n
-        real(c_double), intent(inout)   :: pxyz(n)
-        ! integer(c_int), intent(inout)   :: pxyz(:)
-        ! integer(c_int), intent(inout)   :: pxyz(n)
-        
-        integer(int32) :: i, npoints
-        npoints = size(particles(1)%XE,1)
+       use iso_c_binding, only: c_int, c_double, c_loc
+       implicit none
        
-        ! print *, "SIZE: ", size(pxyz)
-        ! print *, "pxyz1: ", pxyz(5)
-        do i = 1,5!npoints
-            ! pxyz(i)   = particles(1)%XE(i,1)
-            pxyz(i)   = 23651491.23
-        end do
+       integer(c_int), intent(in) :: n
+       real(c_double), intent(inout)   :: pxyz(n)
+       ! integer(c_int), intent(inout)   :: pxyz(:)
+       ! integer(c_int), intent(inout)   :: pxyz(n)
+       
+       integer(int32) :: i, npoints
+       npoints = size(particles(1)%XE,1)
+      
+       ! print *, "SIZE: ", size(pxyz)
+       ! print *, "pxyz1: ", pxyz(5)
+       do i = 1,5!npoints
+           ! pxyz(i)   = particles(1)%XE(i,1)
+           pxyz(i)   = 23651491.23
+       end do
 
 
     end subroutine arraycheck
 
     subroutine getpositions(XC,YC,ZC,nn) bind(C)
-        ! It takes in the position arrays defined in openfoam and fills
-        ! it with the particle's position values
-        use iso_c_binding, only: c_int, c_double, c_loc
-        implicit none
+       ! It takes in the position arrays defined in openfoam and fills
+       ! it with the particle's position values
+       use iso_c_binding, only: c_int, c_double, c_loc
+       implicit none
 
-        integer(c_int), intent(in)      :: nn
-        real(c_double), intent(inout)   :: XC(nn),YC(nn),ZC(nn)
+       integer(c_int), intent(in)      :: nn
+       real(c_double), intent(inout)   :: XC(nn),YC(nn),ZC(nn)
 
-        integer(int32) :: i, nparticles, npoints
+       integer(int32) :: i, nparticles, npoints
 
-        ! print *, "Size of XC: ", size(XC)
-        nparticles = 1
+       ! print *, "Size of XC: ", size(XC)
+       nparticles = 1
 
-        npoints = size(particles(1)%XE,1)
+       npoints = size(particles(1)%XE,1)
 
-        do i = 1,npoints
-            XC(i)   = particles(1)%XE(i,1)
-            YC(i)   = particles(1)%XE(i,2)
-            ZC(i)   = particles(1)%XE(i,3)
-        end do
+       do i = 1,npoints
+           XC(i)   = particles(1)%XE(i,1)
+           YC(i)   = particles(1)%XE(i,2)
+           ZC(i)   = particles(1)%XE(i,3)
+       end do
     end subroutine getpositions
    
     subroutine calculateforces(FXC,FYC,FZC,nn) bind(C)
-        ! Calculates the forces in the particle
-        ! Transfers those forces to the arrays passed in by openfoam
-        use iso_c_binding, only: c_int, c_double, c_loc
-        implicit none
+       ! Calculates the forces in the particle
+       ! Transfers those forces to the arrays passed in by openfoam
+       use iso_c_binding, only: c_int, c_double, c_loc
+       implicit none
 
-        integer(c_int), intent(in)      :: nn
-        real(c_double), intent(inout)   :: FXC(nn),FYC(nn),FZC(nn)
+       integer(c_int), intent(in)      :: nn
+       real(c_double), intent(inout)   :: FXC(nn),FYC(nn),FZC(nn)
 
-        integer(int32) :: i, nparticles, npoints
+       integer(int32) :: i, nparticles, npoints
 
-        nparticles = 1
+       nparticles = 1
 
-        npoints = size(particles(1)%XE,1)
+       npoints = size(particles(1)%XE,1)
 
-        do i = 1,nparticles
-            call particles(i)%calculate_forces()
-        end do
+       do i = 1,nparticles
+           call particles(i)%calculate_forces()
+       end do
 
-        do i = 1,npoints
-            FXC(i)  = particles(1)%fden(i,1)
-            FYC(i)  = particles(1)%fden(i,2)
-            FZC(i)  = particles(1)%fden(i,3)
-        end do
+       do i = 1,npoints
+           FXC(i)  = particles(1)%fden(i,1)
+           FYC(i)  = particles(1)%fden(i,2)
+           FZC(i)  = particles(1)%fden(i,3)
+       end do
     end subroutine calculateforces
 
 
     subroutine updatepositions(U,V,W,dt,nn) bind(C)
-        ! Take in the empty position arrays from openfoam
-        ! Fill it up with values
-        use iso_c_binding, only: c_int, c_double, c_loc
-        implicit none
+       ! Take in the empty position arrays from openfoam
+       ! Fill it up with values
+       use iso_c_binding, only: c_int, c_double, c_loc
+       implicit none
 
-        integer(c_int), intent(in)      :: nn
-        real(c_double), intent(inout)   :: U(nn), V(nn) ,W(nn)
-        real(c_double), intent(in)      :: dt
+       integer(c_int), intent(in)      :: nn
+       real(c_double), intent(inout)   :: U(nn), V(nn) ,W(nn)
+       real(c_double), intent(in)      :: dt
 
-        integer(int32) :: i, nparticles, npoints
+       integer(int32) :: i, nparticles, npoints
 
-        nparticles = 1
+       nparticles = 1
 
-        npoints = size(particles(1)%XE,1)
-        
-        do i = 1,npoints
-            particles(1)%U(i,1) = U(i)
-            particles(1)%U(i,2) = V(i)
-        end do
+       npoints = size(particles(1)%XE,1)
+       
+       do i = 1,npoints
+           particles(1)%U(i,1) = U(i)
+           particles(1)%U(i,2) = V(i)
+           particles(1)%U(i,3) = W(i)
+       end do
 
-        itnum = itnum + 1
-        
-        if (mod(itnum,200).eq.0) then
-            call write_field(particles(1)%XE,'P',itnum)
-        end if
+       itnum = itnum + 1
+       
+       if (mod(itnum,200).eq.0) then
+           call write_field(particles(1)%XE,'P',itnum)
+       end if
 
-        do i = 1,nparticles
-            call particles(i)%update_position(dt)
-        end do
+       do i = 1,nparticles
+           call particles(i)%update_position(dt)
+       end do
 
     end subroutine updatepositions
 

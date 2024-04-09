@@ -5,4 +5,4 @@ EXE_INC = \
 EXE_LIBS = \
     -lfiniteVolume \
     -lmeshTools \
-    -L/home/divyaprakash/my_solvers/ofcil/fem2d -lsoftparticles
+    -L/home/divyaprakash/my_solvers/ofcil3D/fem2d -lsoftparticles3D

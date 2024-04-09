@@ -148,7 +148,7 @@ int main(int argc, char *argv[])
         Foam::DynamicList<Foam::labelList> neighborsList;
         for (int inoelpts = 0; inoelpts < noelpts; ++inoelpts) {
             // Get the node's location
-            rr[0] = pposx[inoelpts]; rr[1] = pposy[inoelpts]; // rr[2] = pposz[inoelpts];
+            rr[0] = pposx[inoelpts]; rr[1] = pposy[inoelpts]; rr[2] = pposz[inoelpts];
             #include "getNeighbours.H"
             neighborsList.append(appended);
             appended.clear();
@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
         // Go through each of the nodes and then their neighbours
         for (int inoelpts = 0; inoelpts < noelpts; ++inoelpts) {
             // Get the node's location
-            rr[0] = pposx[inoelpts]; rr[1] = pposy[inoelpts]; // rr[2] = pposz[inoelpts];
+            rr[0] = pposx[inoelpts]; rr[1] = pposy[inoelpts]; rr[2] = pposz[inoelpts];
             // Get the node's force
             vector pf(0.0,0.0,0.0);
             pf[0] = pfx[inoelpts]; pf[1] = pfy[inoelpts]; pf[2] = pfz[inoelpts];
@@ -238,7 +238,7 @@ int main(int argc, char *argv[])
             // Get the node's location
             rr[0] = pposx[inoelpts];
             rr[1] = pposy[inoelpts];
-            // rr[2] = pposz[inoelpts];
+            rr[2] = pposz[inoelpts];
             // Get the neighbors list for that node alone
             labelList singleNodeNeighbors = neighborsList[inoelpts];
 
@@ -252,7 +252,7 @@ int main(int argc, char *argv[])
             // Store the interpolated velocity at each node
             pvx[inoelpts] = pu[0]; 
             pvy[inoelpts] = pu[1];
-            pvz[inoelpts] = 0.0;
+            pvz[inoelpts] = pu[2];
         }
         // Clear the list of lists of neighbours
         neighborsList.clear();

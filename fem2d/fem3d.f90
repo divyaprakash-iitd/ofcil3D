@@ -149,7 +149,7 @@ module fem3d
         end do
 
         ! Adding forces for all nodes
-        ! self%fden = 0.0d0
+        self%fden = 0.0d0
         do k = 1, nelem
             do j = 1, 4
                nidx = self%M(k,j)
